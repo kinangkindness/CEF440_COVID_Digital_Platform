@@ -1,0 +1,184 @@
+package com.xadmin.usermanagement.dao;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.xadmin.usermanagement.bean.User;
+
+public class UserDao {
+	private String jdbcURL = "jdbc:mysql://localhost:3306/users_db?useSSL=false";
+	private String jdbcUsername = "root";
+	private String jdbcPassword ="";
+	private String jdbcDriver = "com.mysql.jdbc.Driver";
+	
+	private static final String INSERT_USERS_TB_SQL = "INSERT INTO users_tb" + " (name, email, phone, dob, password, family, region, division, subdivision, town, quarter) VALUES " + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+	private static final String SELECT_ALL_USER = "select * from users_tb";
+	private static final String SELECT_USER_BY_ID = "select id, name, email, phone, dob, password, family, region, division, subdivision, quarter, town from users_tb where id=?";
+	private static final String DELETE_USERS_TB_SQL = "delete from users_tb where id =?;";
+	private static final String UPDATE_USERS_TB_SQL = "update users_tb set name=?, email=?,  phone=?,  dob=?,  password=?,  family=?,  region=?, division=?, subdivision=?, town=?, quarter=?where id =?;";
+	public UserDao() {
+	}
+	
+	protected Connection getConnection(){
+		Connection connection = null;
+		try{
+			Class.forName(jdbcDriver);
+			connection = DriverManager.getConnection(jdbcURL, jdbcUsername, jdbcPassword);
+		} catch (SQLException e){
+			e.printStackTrace();
+		} catch (ClassNotFoundException e){
+			e.printStackTrace();
+		}
+		return connection;
+	}
+	// insert user
+	public void insertUser(User user) throws SQLException{
+		System.out.println(INSERT_USERS_TB_SQL);
+		try(Connection connection = getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(INSERT_USERS_TB_SQL)){
+			preparedStatement.setString(1, user.getName());
+			preparedStatement.setString(2, user.getEmail());
+			preparedStatement.setString(3, user.getPhone());
+			preparedStatement.setString(4, user.getDob());
+			preparedStatement.setString(5, user.getPassword());
+			preparedStatement.setString(6, user.getFamily());
+			preparedStatement.setString(7, user.getRegion());
+			preparedStatement.setString(8, user.getDivision());
+			preparedStatement.setString(9, user.getSubdivision());
+			preparedStatement.setString(10, user.getTown());
+			preparedStatement.setString(11, user.getQuarter());
+			System.out.println(preparedStatement);
+			preparedStatement.executeUpdate();
+		} catch (SQLException e) {
+			printSQLException(e);			
+		}
+	}
+	
+	
+	
+	// select user by id
+public User selectUser(int id){
+	User user = null;
+	//Step 1: Establishing a Connection
+	try (Connection connection = getConnection();
+			// Step 2: Create a statement using connection object
+			PreparedStatement preparedStatement = connection.prepareStatement(SELECT_USER_BY_ID);){
+		preparedStatement.setInt(1,  id);
+		System.out.println(preparedStatement);
+		// Step 3: Execute the query or update query
+		ResultSet rs = preparedStatement.executeQuery();
+		
+		// Step 4: Process the ResultSet object.
+		while (rs.next()){
+			String name = rs.getString("name");
+			String email = rs.getString("email");
+			String phone = rs.getString("phone");
+			String dob = rs.getString("dob");
+			String password = rs.getString("password");
+			String family = rs.getString("family");
+			String region = rs.getString("region");
+			String division = rs.getString("division");
+			String subdivision= rs.getString("subdivision");
+			String town = rs.getString("town");
+			String quarter= rs.getString("quarter");
+			user = new User(id, name, email, phone, dob, password, family, region, division, subdivision, quarter, town);			
+		}
+	} catch (SQLException e){
+		printSQLException(e);
+			}
+	return user;
+}
+	// select all users
+public List<User> selectAllUsers(){
+	
+	// using try-with-resources to avoid closing resources (boiler plate code)
+	List<User> users_tb = new ArrayList<>();
+	// Step 1. Establishing a Connection
+	try (Connection connection = getConnection();
+		
+			// Step 2. Create a statement using connection object
+		PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_USER);){
+		System.out.println(preparedStatement);
+		// Step 3. Execute the query or update query
+		ResultSet rs = preparedStatement.executeQuery();
+		
+		// Step 4. Process the ResultSet object.
+		while (rs.next()){
+			int id = rs.getInt("id");
+			String name = rs.getString("name");
+			String email = rs.getString("email");
+			String phone = rs.getString("phone");
+			String dob = rs.getString("dob");
+			String password = rs.getString("password");
+			String family = rs.getString("family");
+			String region = rs.getString("region");
+			String division = rs.getString("division");
+			String subdivision= rs.getString("subdivision");
+			String town = rs.getString("town");
+			String quarter= rs.getString("quarter");
+			users_tb.add(new User(id, name, email, phone, dob, password, family, region, division, subdivision, quarter, town));			
+		}
+		} catch (SQLException e){
+			printSQLException(e);
+		}
+		return users_tb;
+}
+	
+	// update use
+	public boolean updateUser(User user) throws SQLException {
+		boolean rowUpdated;
+		try (Connection connection = getConnection();
+				PreparedStatement statement = connection.prepareStatement(UPDATE_USERS_TB_SQL);){
+			System.out.println("updated User:"+statement);
+			statement.setString(1, user.getName());
+			statement.setString(2, user.getEmail());
+			statement.setString(3, user.getPhone());	
+			statement.setString(4, user.getDob());
+			statement.setString(5, user.getPassword());
+			statement.setString(6, user.getFamily());
+			statement.setString(7, user.getRegion());
+			statement.setString(8, user.getDivision());
+			statement.setString(9, user.getSubdivision());
+			statement.setString(10, user.getTown());
+			statement.setString(11, user.getQuarter());
+			statement.setInt(12, user.getId());
+			
+			rowUpdated = statement.executeUpdate()>0;
+			
+		}
+		return rowUpdated;
+	}
+	
+	// delete user
+	public boolean deleteUser(int id) throws SQLException{
+		boolean rowDeleted;
+		try(Connection connection = getConnection();
+				PreparedStatement statement = connection.prepareStatement(DELETE_USERS_TB_SQL);){
+			statement.setInt(1, id);
+			rowDeleted = statement.executeUpdate() > 0;
+		}
+		return rowDeleted;
+	}
+	
+
+	private void printSQLException(SQLException ex){
+		for (Throwable e: ex){
+			if (e instanceof SQLException){
+				e.printStackTrace(System.err);
+				System.err.println("SQLState: " + ((SQLException) e).getSQLState());
+				System.err.println("Error Code: " + ((SQLException) e).getErrorCode());
+				System.err.println("Message: " + e.getMessage());
+				Throwable t = ex.getCause();
+				while (t != null){
+					System.out.println("Cause: " + t);
+					t = t.getCause();
+				}
+			}
+		}
+	}
+}
